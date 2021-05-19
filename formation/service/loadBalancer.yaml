@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: loadbalancer
+spec:
+  selector:
+    app: web
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9376
+  externalIPs:
+    - 172.42.42.242
+  type: LoadBalancer
+status:
+  loadBalancer:

@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: ludo
+  name: ludo
+  labels:
+    app: ludo
+spec:
+  selector:
+    matchLabels:
+      app: ludo
+  template:
+    metadata:
+      labels:
+        app: ludo
+    spec:
+      containers:
+      - image: nginx:latest
+        name: nginx
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - name: test
+            mountPath: /usr/share/nginx/html
+      volumes:
+        - name: test
+          persistentVolumeClaim:
+             claimName: test-nfs

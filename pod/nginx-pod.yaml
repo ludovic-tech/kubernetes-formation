@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-ludo
+  labels:
+   app: www
+   version: '2'
+spec:
+  containers:
+  - image: nginx:latest
+    name: nginx

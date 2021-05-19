@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta
+kind: Ingress
+metadata:
+  name: jenkins-ingress
+  namespace: jenkins
+spec:
+  tls:
+  - hosts: 
+    - jenkins.ludovic.tech
+  rules:
+    - host: jenkins.ludovic.tech
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: jenkins
+              servicePort: 8080

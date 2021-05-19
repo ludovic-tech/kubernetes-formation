@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: formation
+  labels:
+    app: formation
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: formation
+  name: nginx
+  labels:
+   app: web
+   version: '2'
+spec:
+  containers:
+  - image: nginx
+    name: nginx

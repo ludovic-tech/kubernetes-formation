@@ -1,0 +1,13 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: www.com.manu-ingress
+  namespace: manu
+spec:
+  rules:
+  - host: www.lepreteplume.com
+    http:
+      paths:
+      - backend:
+          serviceName: manu-wordpress
+          servicePort: 80

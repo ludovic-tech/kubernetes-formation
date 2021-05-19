@@ -1,0 +1,137 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: php
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: php
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: web
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: php
+  labels:
+    app: db
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: db
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: apache
+  namespace: php
+spec:
+  storageClassName: nfs-storage
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: web
+  name: apache-php
+  namespace: php
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      volumes:
+      - name: www
+        persistentVolumeClaim:
+          claimName: apache
+      containers:
+      - image: tutum/apache-php
+        name: apache
+        volumeMounts:
+        - name: www
+          mountPath: /var/www/html
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql
+  namespace: php
+  labels:
+   app: db
+   version: '2'
+spec:
+  containers:
+  - image: mariadb
+    name: mariadb
+    env:
+    - name: MYSQL_ROOT_PASSWORD
+      value: root
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: web
+  name: apache-php
+  namespace: php
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      volumes:
+      - name: www
+        persistentVolumeClaim:
+          claimName: apache
+      containers:
+      - image: tutum/apache-php
+        name: apache
+        volumeMounts:
+        - name: www
+          mountPath: /var/www/html
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apache-db
+  namespace: php
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: php.ludovic.tech
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+               name: web
+               port:
+                 number: 80

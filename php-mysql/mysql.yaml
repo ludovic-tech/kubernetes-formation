@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql
+  namespace: monitoring
+  labels:
+   app: db
+   version: '2'
+spec:
+  containers:
+  - image: mariadb
+    name: mariadb
+    env:
+    - name: MYSQL_ROOT_PASSWORD
+      value: root
