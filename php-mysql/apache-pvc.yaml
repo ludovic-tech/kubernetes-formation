@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: apache
-  namespace: monitoring
+  name: apache-ludo
+  namespace: ludo
 spec:
   storageClassName: nfs-storage
   accessModes:

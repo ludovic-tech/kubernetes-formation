@@ -5,7 +5,8 @@ metadata:
   labels:
    app: www
    version: '2'
+   env: test
 spec:
   containers:
-  - image: nginx:latest
+  - image: nginx
     name: nginx

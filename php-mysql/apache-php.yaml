@@ -4,9 +4,9 @@ metadata:
   labels:
     app: web
   name: apache-php
-  namespace: monitoring
+  namespace: ludo
 spec:
-  replicas: 2
+  replicas: 4
   selector:
     matchLabels:
       app: web
@@ -18,7 +18,7 @@ spec:
       volumes:
       - name: www
         persistentVolumeClaim:
-          claimName: apache
+          claimName: apache-ludo
       containers:
       - image: tutum/apache-php
         name: apache

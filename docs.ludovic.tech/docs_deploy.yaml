@@ -1,0 +1,143 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: docs
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: docs-wordpress
+  namespace: docs
+  labels:
+   app: docs-wordpress
+spec:
+  storageClassName: nfs-storage
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 6Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: docs-mysql
+  namespace: docs
+  labels:
+   app: docs-wordpress
+spec:
+  storageClassName: nfs-storage
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 6Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docs-wordpress
+  namespace: docs
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: docs-wordpress
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress-mysql
+  namespace: docs
+  labels:
+    app: docs-wordpress
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: docs-wordpress
+    tier: mysql
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress-mysql
+  namespace: docs
+  labels:
+    app: docs-wordpress
+spec:
+  selector:
+    matchLabels:
+      app: docs-wordpress
+      tier: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: docs-wordpress
+        tier: mysql
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: docs-mysql-pass
+              key: password
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: "/var/lib/mysql"
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: docs-mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docs-wordpress
+  namespace: docs
+  labels:
+    app: docs-wordpress
+spec:
+  selector:
+    matchLabels:
+      app: docs-wordpress
+      tier: frontend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: docs-wordpress
+        tier: frontend
+    spec:
+      containers:
+      - image: wordpress:4.8-apache
+        name: wordpress
+        env:
+        - name: WORDPRESS_DB_HOST
+          value: wordpress-mysql
+        - name: WORDPRESS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: docs-mysql-pass          # generated before in secret.yml
+              key: password
+        ports:
+        - containerPort: 80
+          name: wordpress
+        volumeMounts:
+        - name: wordpress-persistent-storage
+          mountPath: "/var/www/html"          # which data will be stored
+      volumes:
+      - name: wordpress-persistent-storage
+        persistentVolumeClaim:
+          claimName: docs-wordpress

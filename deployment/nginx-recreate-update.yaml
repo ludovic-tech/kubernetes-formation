@@ -1,9 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: ludo
   annotations:
-    kubernetes.io/change-cause: "update 1.14 to 1.19"
+    kubernetes.io/change-cause: "MAJ 1.14 to 1.19"
   labels:
     app: web
   name: nginx
