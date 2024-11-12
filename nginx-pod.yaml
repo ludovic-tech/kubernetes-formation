@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-ludo
+  labels:
+   app: web-ludo
+spec:
+  containers:
+  - image: nginx:latest
+    name: nginx
+    imagePullPolicy: IfNotPresent
