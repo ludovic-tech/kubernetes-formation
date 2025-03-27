@@ -6,6 +6,18 @@ metadata:
    app: web-ludo
 spec:
   containers:
-  - image: nginx:latest
+  - image: nginx:1.25
     name: nginx
     imagePullPolicy: IfNotPresent
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodeport-ludo
+spec:
+  type: NodePort
+  selector:
+    app: web-ludo
+  ports:
+  - port: 80
+    targetPort: 80
