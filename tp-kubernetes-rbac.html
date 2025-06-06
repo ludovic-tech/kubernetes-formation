@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>TP Kubernetes - Contrôle d'accès RBAC avancé</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 40px auto;
+            max-width: 900px;
+            line-height: 1.6;
+            font-size: 16px;
+            color: #333;
+            background: #fff;
+        }
+        h1, h2 {
+            color: #1e88e5;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1em;
+            overflow-x: auto;
+            border-left: 4px solid #1e88e5;
+        }
+        code {
+            font-family: Consolas, monospace;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 2em 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>TP Kubernetes - Contrôle d'accès RBAC avancé</h1>
+
+    <h2>Objectif</h2>
+    <p>
+        Ce TP vous permet de gérer les permissions Kubernetes avec RBAC.<br>
+        Deux profils sont créés :
+    </p>
+    <ul>
+        <li><strong>Admins de namespace</strong> : création de namespaces, quotas, limits, networkpolicies.</li>
+        <li><strong>Développeurs</strong> : déploiement d'applications dans un namespace dédié.</li>
+    </ul>
+
+    <h2>1. Création de certificats utilisateurs</h2>
+    <pre><code># Pour admin-dev
+openssl genrsa -out admin-dev.key 2048
+openssl req -new -key admin-dev.key -out admin-dev.csr -subj "/CN=admin-dev/O=admins"
+openssl x509 -req -in admin-dev.csr -CA /etc/kubernetes/pki/ca.crt \
+  -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out admin-dev.crt -days 365
+
+# Pour dev-alice
+openssl genrsa -out dev-alice.key 2048
+openssl req -new -key dev-alice.key -out dev-alice.csr -subj "/CN=dev-alice/O=devs"
+openssl x509 -req -in dev-alice.csr -CA /etc/kubernetes/pki/ca.crt \
+  -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out dev-alice.crt -days 365
+</code></pre>
+
+    <h2>2. Configuration des contextes kubectl</h2>
+    <pre><code>kubectl config set-credentials admin-dev --client-certificate=admin-dev.crt --client-key=admin-dev.key --embed-certs=true
+kubectl config set-context admin-dev-context --cluster=kubernetes --user=admin-dev
+kubectl config use-context admin-dev-context
+</code></pre>
+
+    <h2>3. ClusterRole pour les admins de namespace</h2>
+    <pre><code>apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: namespace-admin
+rules:
+- apiGroups: [""]
+  resources: ["namespaces", "resourcequotas", "limitranges"]
+  verbs: ["create", "get", "list", "watch", "delete", "update"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies"]
+  verbs: ["create", "get", "list", "watch", "update", "delete"]
+</code></pre>
+
+    <h2>4. Role pour les développeurs</h2>
+    <pre><code>apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-developer
+  namespace: demo-app
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "persistentvolumeclaims", "configmaps", "secrets"]
+  verbs: ["create", "get", "list", "update", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["create", "get", "list", "update", "delete"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["create", "get", "list", "update", "delete"]
+</code></pre>
+
+    <h2>5. ClusterRoleBinding pour admin-dev</h2>
+    <pre><code>apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bind-namespace-admin
+subjects:
+- kind: User
+  name: admin-dev
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: namespace-admin
+  apiGroup: rbac.authorization.k8s.io
+</code></pre>
+
+    <h2>6. RoleBinding pour dev-alice</h2>
+    <pre><code>apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bind-app-developer
+  namespace: demo-app
+subjects:
+- kind: User
+  name: dev-alice
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: app-developer
+  apiGroup: rbac.authorization.k8s.io
+</code></pre>
+
+    <h2>7. Tests des permissions</h2>
+    <ul>
+        <li>En tant que <code>admin-dev</code> : créer un namespace, y appliquer des quotas, des limitranges, des networkpolicies.</li>
+        <li>En tant que <code>dev-alice</code> : créer un Deployment, un Service, un Ingress, un PVC, etc.</li>
+        <li>Tester les droits avec : <code>kubectl auth can-i create pods</code></li>
+    </ul>
+
+</body>
+</html>
